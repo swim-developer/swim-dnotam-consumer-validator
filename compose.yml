@@ -1,0 +1,58 @@
+# Local development infrastructure for swim-dnotam-consumer-validator.
+#
+# Starts:
+#   - dnotam-consumer-validator-artemis : AMQP broker for event delivery
+#   - dnotam-consumer-validator-mariadb : validator persistence
+#
+# Usage:
+#   podman compose up -d
+#   ./mvnw quarkus:dev   (starts validator on port 8084)
+
+services:
+
+  dnotam-consumer-validator-artemis:
+    image: quay.io/artemiscloud/activemq-artemis-broker:artemis.2.38.0
+    container_name: dnotam-consumer-validator-artemis
+    ports:
+      - "5674:5672"
+      - "8163:8161"
+    environment:
+      AMQ_USER: admin
+      AMQ_PASSWORD: admin
+    networks:
+      - swim-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8161/console/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  dnotam-consumer-validator-mariadb:
+    image: docker.io/library/mariadb:12-ubi
+    container_name: dnotam-consumer-validator-mariadb
+    ports:
+      - "3307:3306"
+    environment:
+      MARIADB_DATABASE: swim_consumer_validator
+      MARIADB_USER: swim
+      MARIADB_PASSWORD: swim
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - dnotam-consumer-validator-mariadb-data:/var/lib/mysql
+    networks:
+      - swim-network
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck.sh --connect --innodb_initialized"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  dnotam-consumer-validator-mariadb-data:
+
+networks:
+  swim-network:
+    name: swim-dnotam-consumer-validator-network
+    driver: bridge

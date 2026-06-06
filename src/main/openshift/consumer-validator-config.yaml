@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consumer-validator-config
+  namespace: swim-demo
+  labels:
+    app: consumer-validator
+    app.kubernetes.io/name: consumer-validator
+    app.kubernetes.io/part-of: consumer-validator
+data:
+  QUARKUS_HTTP_PORT: "8080"
+  QUARKUS_HTTP_SSL_PORT: "8443"
+  QUARKUS_HTTP_SSL_CERTIFICATE_FILES: "/certs/server/tls.crt"
+  QUARKUS_HTTP_SSL_CERTIFICATE_KEY_FILES: "/certs/server/tls.key"
+  QUARKUS_HTTP_SSL_CERTIFICATE_TRUST_STORE_FILE: "/certs/ca/ca.crt"
+  QUARKUS_HTTP_SSL_CERTIFICATE_TRUST_STORE_FILE_TYPE: "PEM"
+  QUARKUS_LOG_LEVEL: "INFO"
+  EVENT_GENERATOR_ENABLED: "true"
+  EVENT_GENERATOR_SCHEDULE: "0 */1 * * * ?"
+  EVENT_GENERATOR_EVENTS_PATH: "/opt/events"
+  AMQP_BROKER_HOST: "consumer-validator-artemis-hdls-svc.swim-demo.svc.cluster.local"
+  AMQP_BROKER_PORT: "5672"
+

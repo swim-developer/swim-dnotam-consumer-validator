@@ -1,0 +1,66 @@
+{#include layout}
+{#content}
+<div class="page-header">
+    <h2 class="page-title">Dashboard</h2>
+    <p class="page-description">Overview of the DNOTAM Consumer Validator status and activity</p>
+</div>
+
+<div class="stat-grid">
+    <div id="stats-subscriptions" 
+         hx-get="/admin/status/stats" 
+         hx-trigger="every 3s" 
+         hx-swap="innerHTML"
+         style="display: contents;">
+        <div class="stat-card">
+            <div class="stat-value">{activeSubscriptions}</div>
+            <div class="stat-label">Active Subscriptions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{totalSubscriptions}</div>
+            <div class="stat-label">Total Subscriptions</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{eventFilesCount}</div>
+        <div class="stat-label">Event Files Available</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" style="font-size: 1rem; word-break: break-all;">DigitalNOTAMService</div>
+        <div class="stat-label">Service Topic</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">System Status</h3>
+    <table class="table">
+        <tbody hx-get="/admin/status/system" hx-trigger="every 3s" hx-swap="innerHTML">
+            <tr>
+                <td style="width: 200px;">AMQP Broker</td>
+                <td>
+                    <span class="badge {brokerConnected ? 'badge-success' : 'badge-danger'}">
+                        {brokerConnected ? 'Connected' : 'Disconnected'}
+                    </span>
+                </td>
+                <td>{brokerInfo}</td>
+            </tr>
+            <tr>
+                <td>Event Generator</td>
+                <td>
+                    <span class="badge {eventGeneratorEnabled ? 'badge-success' : 'badge-warning'}">
+                        {eventGeneratorEnabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                </td>
+                <td>Schedule: {eventGeneratorSchedule}</td>
+            </tr>
+        </tbody>
+        <tbody>
+            <tr>
+                <td>Events Path</td>
+                <td colspan="2">{eventsPath}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{/content}
+{/include}
+

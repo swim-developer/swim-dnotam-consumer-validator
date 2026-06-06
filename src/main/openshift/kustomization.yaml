@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: swim-demo
+
+resources:
+  - consumer-validator-config.yaml
+  - consumer-validator-amqp-credentials.yaml
+  - deployment.yaml
+  - consumer-validator-service.yaml
+  - consumer-validator-route.yaml
+  - consumer-validator-route-http.yaml
+  # Certificates (already exist in cluster, uncomment to recreate):
+  # - consumer-validator-server-cert.yaml
+  # - consumer-validator-client-certificate.yaml
+
+commonLabels:
+  app.kubernetes.io/version: "1.0.0"
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+  - name: quay.io/masales/swim-dnotam-consumer-validator
+    newTag: latest
+

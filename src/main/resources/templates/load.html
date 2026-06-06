@@ -1,0 +1,260 @@
+{#include layout}
+{#content}
+<div class="page-header">
+    <h2 class="page-title">Load Test</h2>
+    <p class="page-description">Execute a load test sending events to all active subscriptions</p>
+</div>
+
+<div class="card">
+    <div class="load-controls">
+        <div class="control-group">
+            <label class="form-label">Duration</label>
+            <div class="input-row">
+                <input type="number" id="duration-value" class="form-control duration-input" value="10" min="1">
+                <select id="duration-unit" class="form-control unit-select">
+                    <option value="s" selected>Seconds</option>
+                    <option value="m">Minutes</option>
+                    <option value="h">Hours</option>
+                    <option value="d">Days</option>
+                </select>
+                <label class="checkbox-label" title="When enabled, dates in the XML are randomized to the current year before sending. This prevents the client from treating the message as a duplicate (idempotent).">
+                    <input type="checkbox" id="randomize-dates" checked>
+                    <span>Randomize Dates</span>
+                </label>
+                <label class="checkbox-label" title="When enabled, all date fields are replaced with the current UTC time. Mutually exclusive with Randomize Dates.">
+                    <input type="checkbox" id="use-current-utc">
+                    <span>Use Current UTC</span>
+                </label>
+                <button id="start-btn" class="btn btn-primary" onclick="startLoadTest()">
+                    ⚡ Execute Load Test
+                </button>
+                <button id="stop-btn" class="btn btn-secondary" onclick="stopLoadTest()" style="display: none;">
+                    ⏹ Stop
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="console-header">
+        <span>Console Output</span>
+        <button class="btn btn-sm btn-secondary" onclick="clearConsole()">Clear</button>
+    </div>
+    <div id="console" class="console-output">
+        <div class="console-placeholder">Waiting for load test to start...</div>
+    </div>
+</div>
+
+<style>
+.load-controls {
+    padding: 8px 0;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.duration-input {
+    width: 100px;
+}
+
+.unit-select {
+    width: 140px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+.console-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.console-output {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    height: 400px;
+    overflow-y: auto;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    padding: 16px;
+}
+
+.console-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.console-line {
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
+}
+
+.console-time {
+    color: var(--text-muted);
+    min-width: 80px;
+}
+
+.console-message {
+    color: var(--accent-success);
+}
+
+.console-error {
+    color: var(--accent-primary);
+}
+
+.console-info {
+    color: var(--accent-info);
+}
+
+.running .btn-primary {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .input-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .duration-input,
+    .unit-select {
+        width: 100%;
+    }
+
+    .checkbox-label {
+        justify-content: flex-start;
+    }
+
+    .console-output {
+        height: 300px;
+        font-size: 0.75rem;
+        padding: 12px;
+    }
+
+    .console-line {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .console-time {
+        min-width: auto;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .console-output {
+        height: 250px;
+    }
+}
+</style>
+
+<script>
+let eventSource = null;
+
+function startLoadTest() {
+    const value = document.getElementById('duration-value').value;
+    const unit = document.getElementById('duration-unit').value;
+    const duration = value + unit;
+    const randomize = document.getElementById('randomize-dates').checked;
+    const currentUtc = document.getElementById('use-current-utc').checked;
+    
+    document.getElementById('start-btn').style.display = 'none';
+    document.getElementById('stop-btn').style.display = 'inline-flex';
+    
+    const console = document.getElementById('console');
+    console.innerHTML = '';
+    
+    addConsoleLine('info', 'Starting load test for ' + duration + ' (randomizeDates=' + randomize + ', useCurrentUtc=' + currentUtc + ')...');
+    
+    eventSource = new EventSource('/admin/load?duration=' + duration + '&randomizeDates=' + randomize + '&useCurrentUtc=' + currentUtc);
+    
+    eventSource.onmessage = function(event) {
+        addConsoleLine('message', event.data.trim());
+    };
+    
+    eventSource.onerror = function(event) {
+        addConsoleLine('info', 'Load test completed');
+        stopLoadTest();
+    };
+}
+
+function stopLoadTest() {
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+    document.getElementById('start-btn').style.display = 'inline-flex';
+    document.getElementById('stop-btn').style.display = 'none';
+}
+
+function addConsoleLine(type, message) {
+    const console = document.getElementById('console');
+    const placeholder = console.querySelector('.console-placeholder');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US', { hour12: false });
+    
+    const line = document.createElement('div');
+    line.className = 'console-line';
+    line.innerHTML = '<span class="console-time">' + time + '</span>' +
+                     '<span class="console-' + type + '">' + message + '</span>';
+    
+    console.insertBefore(line, console.firstChild);
+}
+
+function clearConsole() {
+    document.getElementById('console').innerHTML = '<div class="console-placeholder">Waiting for load test to start...</div>';
+}
+
+window.addEventListener('beforeunload', stopLoadTest);
+window.addEventListener('pagehide', stopLoadTest);
+
+document.getElementById('randomize-dates').addEventListener('change', function() {
+    if (this.checked) document.getElementById('use-current-utc').checked = false;
+});
+document.getElementById('use-current-utc').addEventListener('change', function() {
+    if (this.checked) document.getElementById('randomize-dates').checked = false;
+});
+</script>
+{/content}
+{/include}
+

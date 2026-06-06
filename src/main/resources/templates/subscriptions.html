@@ -1,0 +1,194 @@
+{#include layout}
+{#content}
+<style>
+.filters-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.filters-overlay.visible { display: flex; }
+.filters-dialog {
+    background: var(--card-bg, #1e1e2e);
+    border-radius: 8px;
+    padding: 1.5rem;
+    max-width: 640px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.filters-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color, #333);
+    padding-bottom: 0.75rem;
+}
+.filters-dialog-title { font-size: 1.1rem; font-weight: 600; }
+.filters-dialog-close {
+    background: none; border: none;
+    font-size: 1.5rem; cursor: pointer;
+    color: var(--text-secondary, #888);
+}
+.filters-dialog-close:hover { color: var(--text-primary, #eee); }
+.filters-json {
+    background: var(--bg-secondary, #111);
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+}
+.filters-json .json-key { color: #7dd3fc; }
+.filters-json .json-string { color: #86efac; }
+.filters-json .json-null { color: #a1a1aa; font-style: italic; }
+.filters-json .json-bracket { color: #d4d4d8; }
+.btn-filters {
+    background: transparent;
+    border: 1px solid var(--border-color, #444);
+    border-radius: 4px;
+    padding: 0.2rem 0.55rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #aaa);
+    transition: all 0.15s;
+}
+.btn-filters:hover { background: var(--bg-secondary, #222); color: var(--text-primary, #eee); }
+</style>
+
+<div class="page-header-actions">
+    <div class="page-header">
+        <h2 class="page-title">Subscriptions</h2>
+        <p class="page-description">All registered subscriptions and their current status</p>
+    </div>
+    <div>
+        <button class="btn btn-danger btn-sm"
+                hx-delete="/admin/reset-subscriptions"
+                hx-target="#reset-result"
+                hx-on::after-request="setTimeout(() => location.reload(), 500)"
+                hx-confirm="Are you sure you want to delete all subscriptions?">
+            🗑️ Reset All
+        </button>
+        <div id="reset-result" class="reset-result"></div>
+    </div>
+</div>
+
+<div class="card">
+    {#if subscriptions.isEmpty}
+    <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-text">No subscriptions registered yet</div>
+    </div>
+    {#else}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Subscription ID</th>
+                    <th>Queue</th>
+                    <th>Topic</th>
+                    <th>Status</th>
+                    <th>QoS</th>
+                    <th>Durable</th>
+                    <th>Filters</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#for sub in subscriptions}
+                <tr>
+                    <td>{sub.subscriptionId}</td>
+                    <td><code>{sub.queue}</code></td>
+                    <td>{sub.topic}</td>
+                    <td>
+                        {#if sub.subscriptionStatus.name == 'ACTIVE'}
+                        <span class="badge badge-success">{sub.subscriptionStatus}</span>
+                        {#else if sub.subscriptionStatus.name == 'DELETED' || sub.subscriptionStatus.name == 'TERMINATED' || sub.subscriptionStatus.name == 'INVALID'}
+                        <span class="badge badge-danger">{sub.subscriptionStatus}</span>
+                        {#else}
+                        <span class="badge badge-warning">{sub.subscriptionStatus}</span>
+                        {/if}
+                    </td>
+                    <td>{sub.qos}</td>
+                    <td>{sub.durable}</td>
+                    <td>
+                        <button class="btn-filters" title="View subscription filters"
+                                onclick="showFilters(this)"
+                                data-sub-id="{sub.subscriptionId}"
+                                data-event-scenario="{sub.eventScenario ?: ''}"
+                                data-airport-heliport="{sub.airportHeliport ?: ''}"
+                                data-airspace="{sub.airspace ?: ''}"
+                                data-event-series="{sub.eventSeries ?: ''}"
+                                data-publisher="{sub.publisher ?: ''}"
+                                data-description="{sub.description ?: ''}">
+                            🔍
+                        </button>
+                    </td>
+                </tr>
+                {/for}
+            </tbody>
+        </table>
+    </div>
+    {/if}
+</div>
+
+<div class="filters-overlay" id="filtersOverlay" onclick="if(event.target===this)closeFilters()">
+    <div class="filters-dialog">
+        <div class="filters-dialog-header">
+            <span class="filters-dialog-title" id="filtersTitle">Subscription Filters</span>
+            <button class="filters-dialog-close" onclick="closeFilters()">&times;</button>
+        </div>
+        <div class="filters-json" id="filtersBody"></div>
+    </div>
+</div>
+
+<script>
+function showFilters(btn) {
+    var filters = {};
+    var scenario = btn.dataset.eventScenario;
+    var airport = btn.dataset.airportHeliport;
+    var airspace = btn.dataset.airspace;
+    var series = btn.dataset.eventSeries;
+    var publisher = btn.dataset.publisher;
+    var description = btn.dataset.description;
+
+    if (scenario) { try { filters.eventScenario = JSON.parse(scenario); } catch(e) { filters.eventScenario = scenario; } }
+    if (airport) { try { filters.airportHeliport = JSON.parse(airport); } catch(e) { filters.airportHeliport = airport; } }
+    if (airspace) { try { filters.airspace = JSON.parse(airspace); } catch(e) { filters.airspace = airspace; } }
+    if (series) filters.eventSeries = series;
+    if (publisher) filters.publisher = publisher;
+    if (description) filters.description = description;
+
+    var hasAny = Object.keys(filters).length > 0;
+    var json = hasAny ? JSON.stringify(filters, null, 2) : '{\n  (no filters applied)\n}';
+
+    document.getElementById('filtersTitle').textContent = 'Filters — ' + btn.dataset.subId.substring(0, 8) + '…';
+    document.getElementById('filtersBody').innerHTML = highlightJson(json);
+    document.getElementById('filtersOverlay').classList.add('visible');
+}
+
+function closeFilters() {
+    document.getElementById('filtersOverlay').classList.remove('visible');
+}
+
+function highlightJson(json) {
+    return json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+        .replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>')
+        .replace(/: (null)/g, ': <span class="json-null">$1</span>')
+        .replace(/[\[\]{}]/g, '<span class="json-bracket">$&</span>');
+}
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeFilters(); });
+</script>
+{/content}
+{/include}
+

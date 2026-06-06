@@ -1,0 +1,241 @@
+{#include layout}
+{#content}
+<div class="page-header">
+    <h2 class="page-title">Send Event</h2>
+    <p class="page-description">Paste your own DNOTAM XML event and send it directly to the broker</p>
+</div>
+
+<div class="card send-event-card">
+    <div class="card-header-flex">
+        <span>XML Content</span>
+        <div class="header-actions">
+            <button class="btn btn-secondary btn-sm" onclick="clearEditor()">Clear</button>
+            <button id="send-btn" class="btn btn-primary btn-sm" onclick="sendEvent()">
+                🚀 Send Event
+            </button>
+        </div>
+    </div>
+    <div id="send-result"></div>
+    <div class="editor-container">
+        <textarea id="xml-editor" class="xml-editor" placeholder="Paste your DNOTAM XML here...
+
+Example structure:
+<messages>
+  <message type=&quot;text&quot;>
+    <body>
+      <![CDATA[
+        <?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>
+        <message:AIXMBasicMessage ...>
+          ...
+        </message:AIXMBasicMessage>
+      ]]>
+    </body>
+  </message>
+</messages>"></textarea>
+    </div>
+    <div class="editor-footer">
+        <span class="char-count" id="char-count">0 characters</span>
+        <span class="hint">The XML will be sent exactly as provided, without any modification.</span>
+    </div>
+</div>
+
+<style>
+.send-event-card {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 320px);
+}
+
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+#send-result {
+    margin-bottom: 12px;
+}
+
+#send-result:empty {
+    display: none;
+}
+
+.send-success {
+    background: rgba(0, 210, 106, 0.1);
+    border: 1px solid var(--accent-success);
+    color: var(--accent-success);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.send-error {
+    background: rgba(233, 69, 96, 0.1);
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.editor-container {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.xml-editor {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.xml-editor:focus {
+    border-color: var(--accent-primary);
+}
+
+.xml-editor::placeholder {
+    color: var(--text-muted);
+}
+
+.editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.char-count {
+    font-family: 'Fira Code', monospace;
+}
+
+.hint {
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .send-event-card {
+        height: auto;
+        min-height: calc(100vh - 280px);
+    }
+
+    .card-header-flex {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .editor-container {
+        min-height: 300px;
+    }
+
+    .xml-editor {
+        font-size: 0.8rem;
+        padding: 12px;
+    }
+
+    .editor-footer {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .editor-container {
+        min-height: 250px;
+    }
+
+    .xml-editor {
+        font-size: 0.75rem;
+    }
+
+    .header-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+const editor = document.getElementById('xml-editor');
+const charCount = document.getElementById('char-count');
+
+editor.addEventListener('input', function() {
+    charCount.textContent = this.value.length + ' characters';
+});
+
+function clearEditor() {
+    editor.value = '';
+    charCount.textContent = '0 characters';
+    document.getElementById('send-result').innerHTML = '';
+}
+
+function sendEvent() {
+    const xml = editor.value.trim();
+    
+    if (!xml) {
+        document.getElementById('send-result').innerHTML = '<div class="send-error">Please paste XML content before sending</div>';
+        return;
+    }
+    
+    document.getElementById('send-result').innerHTML = '<div class="send-success">Sending...</div>';
+    
+    fetch('/admin/send-custom-event', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/xml'
+        },
+        body: xml
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('send-result').innerHTML = html;
+    })
+    .catch(err => {
+        document.getElementById('send-result').innerHTML = '<div class="send-error">Failed to send: ' + err.message + '</div>';
+    });
+}
+</script>
+{/content}
+{/include}
+

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.aixm.aero/schema/5.1.1/wrapper"
+           xmlns:message="http://www.aixm.aero/schema/5.1.1/message"
+           xmlns:event="http://www.aixm.aero/schema/5.1.1/event"
+           xmlns:aixm="http://www.aixm.aero/schema/5.1.1"
+           xmlns:gml="http://www.opengis.net/gml/3.2"
+           elementFormDefault="qualified">
+
+    <xs:import namespace="http://www.aixm.aero/schema/5.1.1/message"
+               schemaLocation="./aixm-5.1.1/message/AIXM_BasicMessage.xsd"/>
+
+    <xs:import namespace="http://www.aixm.aero/schema/5.1.1/event"
+               schemaLocation="./event/Event_Features.xsd"/>
+
+    <xs:import namespace="http://www.aixm.aero/schema/5.1.1"
+               schemaLocation="./aixm-5.1.1/AIXM_Features.xsd"/>
+
+    <xs:import namespace="http://www.opengis.net/gml/3.2"
+               schemaLocation="./aixm-5.1.1/gml/3.2.1/gml.xsd"/>
+</xs:schema>

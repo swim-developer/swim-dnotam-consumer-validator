@@ -1,0 +1,853 @@
+{#include layout}
+{#content}
+<div class="page-header">
+    <h2 class="page-title">Test Scenarios</h2>
+    <p class="page-description">Trigger specific test scenarios for client validation</p>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <h3 class="card-title">Fault Injection</h3>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px;">
+        Simulate Subscription Manager failures (503, 409, delays, timeouts) to test consumer resilience.
+    </p>
+    <div class="fault-controls">
+        <form class="fault-form" onsubmit="event.preventDefault(); injectFault();">
+            <div class="fault-form-grid">
+                <div class="fault-field">
+                    <div class="fault-label-row">
+                        <label for="fault-target" class="fault-label">Target endpoint</label>
+                        <button type="button" class="help-chip" onclick="openFaultHelp('target')" title="What is this?" aria-label="Help: target endpoint">?</button>
+                    </div>
+                    <select id="fault-target" class="fault-input" aria-describedby="fault-target-hint">
+                        <option value="swim/v1/subscriptions" data-method="POST">POST /subscriptions (create)</option>
+                        <option value="swim/v1/subscriptions/.*" data-method="PUT">PUT /subscriptions/&#123;id&#125; (update)</option>
+                        <option value="swim/v1/subscriptions/.*" data-method="DELETE">DELETE /subscriptions/&#123;id&#125;</option>
+                        <option value="swim/v1/subscriptions/.*/renew" data-method="PUT">PUT /subscriptions/&#123;id&#125;/renew</option>
+                        <option value="swim/v1/subscriptions" data-method="GET">GET /subscriptions (list)</option>
+                    </select>
+                    <span id="fault-target-hint" class="field-hint">REST path pattern matched by the validator before your request reaches the real handler.</span>
+                </div>
+                <div class="fault-field">
+                    <div class="fault-label-row">
+                        <label for="fault-type" class="fault-label">Fault type</label>
+                        <button type="button" class="help-chip" onclick="openFaultHelp('type')" title="What is this?" aria-label="Help: fault type">?</button>
+                    </div>
+                    <select id="fault-type" class="fault-input" onchange="updateFaultFields()">
+                        <option value="status">HTTP status</option>
+                        <option value="delay">Delay (latency)</option>
+                        <option value="drop">Random drop</option>
+                    </select>
+                </div>
+                <div class="fault-field">
+                    <div class="fault-label-row">
+                        <label for="fault-value" class="fault-label" id="fault-value-label">HTTP status code</label>
+                        <button type="button" class="help-chip" onclick="openFaultHelp('value')" title="What is this?" aria-label="Help: primary value">?</button>
+                    </div>
+                    <input type="number" id="fault-value" class="fault-input" placeholder="503" min="400" max="599" aria-labelledby="fault-value-label">
+                </div>
+                <div class="fault-field">
+                    <div class="fault-label-row">
+                        <label for="fault-duration" class="fault-label">Active duration</label>
+                        <button type="button" class="help-chip" onclick="openFaultHelp('duration')" title="What is this?" aria-label="Help: duration">?</button>
+                    </div>
+                    <div class="fault-duration-row">
+                        <input type="number" id="fault-duration" class="fault-input fault-input-narrow" placeholder="60" min="1" max="600" value="60" aria-describedby="fault-duration-unit">
+                        <span id="fault-duration-unit" class="field-hint-inline">seconds</span>
+                    </div>
+                </div>
+            </div>
+            <div class="fault-actions">
+                <button type="submit" class="btn btn-primary btn-sm">💉 Inject fault</button>
+                <button type="button" class="btn btn-secondary btn-sm" hx-delete="/admin/faults/clear" hx-target="#fault-result" hx-swap="innerHTML">🧹 Clear all</button>
+            </div>
+        </form>
+        <div id="fault-result" class="fault-result"></div>
+    </div>
+
+    <dialog id="fault-help-dialog" class="fault-help-dialog" aria-labelledby="fault-help-dialog-title">
+        <div class="fault-help-dialog-inner">
+            <div class="fault-help-dialog-header">
+                <h3 id="fault-help-dialog-title" class="fault-help-dialog-title"></h3>
+                <button type="button" class="fault-help-dialog-close" onclick="document.getElementById('fault-help-dialog').close()" aria-label="Close">×</button>
+            </div>
+            <div id="fault-help-dialog-body" class="fault-help-dialog-body"></div>
+            <div class="fault-help-dialog-footer">
+                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('fault-help-dialog').close()">OK</button>
+            </div>
+        </div>
+    </dialog>
+</div>
+
+<div class="split-panel">
+    <div class="scenario-list-panel">
+        <div class="panel-header">Scenarios</div>
+        <ul class="scenario-list">
+            <li class="scenario-item" onclick="selectScenario('malformed', 'Malformed Event', '/admin/scenario/malformed', true, 'This scenario takes a random valid XML from the cache and intentionally breaks it by removing a closing tag. The consumer should detect the parsing error and handle it gracefully, typically by sending the message to a Dead Letter Queue (DLQ). Look for the ⛔ marker in the preview to see where the XML was broken.')">
+                <span class="scenario-icon">💥</span>
+                <div class="scenario-info">
+                    <span class="scenario-name">Malformed Event</span>
+                    <span class="scenario-desc">Invalid XML that fails parsing</span>
+                </div>
+            </li>
+            <li class="scenario-item" onclick="selectScenario('duplicate', 'Duplicate Message', '/admin/scenario/duplicate', false, 'This scenario sends the exact same message twice with a 10-second delay between them. The dates are NOT randomized to ensure the message content is identical. The consumer should detect the duplicate using its idempotent mechanism and reject or skip the second message. This tests the duplicate detection based on message content, not just message ID.')">
+                <span class="scenario-icon">🔁</span>
+                <div class="scenario-info">
+                    <span class="scenario-name">Duplicate Message</span>
+                    <span class="scenario-desc">Same message sent twice (10s apart)</span>
+                </div>
+            </li>
+            <li class="scenario-item" onclick="selectScenario('multiple', 'Multiple Messages', '/admin/scenario/multiple', true, 'This scenario combines 2-3 random messages from the cache into a single payload wrapped in a &lt;messages&gt; element. The consumer should be able to parse and process each individual message separately. This tests batch message handling capabilities.')">
+                <span class="scenario-icon">📦</span>
+                <div class="scenario-info">
+                    <span class="scenario-name">Multiple Messages</span>
+                    <span class="scenario-desc">Multiple messages in one payload</span>
+                </div>
+            </li>
+            <li class="scenario-item" onclick="selectScenario('multiple-error', 'Multiple Messages (1 Error)', '/admin/scenario/multiple-error', true, 'This scenario combines multiple messages where one of them is intentionally malformed. The consumer should process all valid messages successfully while handling the malformed one separately (e.g., sending it to DLQ). This tests partial failure handling and transaction isolation.')">
+                <span class="scenario-icon">⚠️</span>
+                <div class="scenario-info">
+                    <span class="scenario-name">Multiple Messages (1 Error)</span>
+                    <span class="scenario-desc">Multiple messages, one with error</span>
+                </div>
+            </li>
+            <li class="scenario-item scenario-action" hx-post="/admin/heartbeat/stop" hx-target="#heartbeat-result" hx-swap="innerHTML">
+                <span class="scenario-icon">💔</span>
+                <div class="scenario-info">
+                    <span class="scenario-name">Stop Heartbeat</span>
+                    <span class="scenario-desc">Simulate provider down (no heartbeats)</span>
+                </div>
+            </li>
+            <li class="scenario-item scenario-action" hx-post="/admin/heartbeat/start" hx-target="#heartbeat-result" hx-swap="innerHTML">
+                <span class="scenario-icon">💚</span>
+                <div class="scenario-info">
+                    <span class="scenario-name">Start Heartbeat</span>
+                    <span class="scenario-desc">Simulate provider recovery (resume heartbeats)</span>
+                </div>
+            </li>
+        </ul>
+        <div id="heartbeat-result" class="heartbeat-result"></div>
+        <div id="scenario-description" class="scenario-description-panel">
+            <div class="description-placeholder">Select a scenario to see detailed information</div>
+        </div>
+    </div>
+    <div class="preview-panel">
+        <div class="panel-header-flex">
+            <span id="preview-title">Preview</span>
+            <div class="trigger-controls" style="display: none;" id="trigger-controls">
+                <label class="checkbox-label" id="randomize-label" title="When enabled, dates in the XML are randomized to the current year before sending. This prevents the client from treating the message as a duplicate (idempotent).">
+                    <input type="checkbox" id="randomize-dates" checked>
+                    <span>Randomize Dates</span>
+                </label>
+                <label class="checkbox-label" id="current-utc-label" title="When enabled, all date fields are replaced with the current UTC time. Mutually exclusive with Randomize Dates.">
+                    <input type="checkbox" id="use-current-utc">
+                    <span>Use Current UTC</span>
+                </label>
+                <button id="trigger-btn" 
+                        class="btn btn-primary btn-sm" 
+                        hx-post=""
+                        hx-target="#trigger-result"
+                        hx-swap="innerHTML">
+                    🚀 Trigger Scenario
+                </button>
+            </div>
+        </div>
+        <div id="trigger-result"></div>
+        <div id="scenario-preview" class="preview-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">👈</div>
+                <div class="empty-state-text">Select a scenario to preview</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.split-panel {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 280px);
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.scenario-list-panel {
+    width: 360px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-panel {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 16px 20px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.panel-header-flex {
+    padding: 12px 20px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.scenario-list {
+    list-style: none;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.scenario-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s;
+}
+
+.scenario-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.scenario-item.selected {
+    background: var(--accent-secondary);
+    border-left: 3px solid var(--accent-primary);
+}
+
+.scenario-icon {
+    font-size: 1.5rem;
+}
+
+.scenario-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.scenario-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.scenario-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.scenario-description-panel {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.description-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.preview-content {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+}
+
+.preview-content pre {
+    margin: 0;
+    padding: 20px;
+    background: transparent !important;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.preview-content code {
+    background: transparent !important;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.preview-content .empty-state {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.trigger-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-transform: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+#trigger-result {
+    padding: 0 20px;
+}
+
+#trigger-result:not(:empty) {
+    padding: 12px 20px;
+}
+
+.trigger-success {
+    background: rgba(0, 210, 106, 0.1);
+    border: 1px solid var(--accent-success);
+    color: var(--accent-success);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.trigger-error {
+    background: rgba(233, 69, 96, 0.1);
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.error-highlight {
+    background: rgba(233, 69, 96, 0.3);
+    color: #ff4444;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 3px;
+    display: inline;
+}
+
+.scenario-action {
+    border-left: 3px solid transparent;
+}
+
+.scenario-action:hover {
+    border-left-color: var(--accent-primary);
+}
+
+.heartbeat-result {
+    padding: 12px 20px;
+    font-size: 0.85rem;
+}
+
+.heartbeat-result:empty {
+    display: none;
+}
+
+.fault-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.fault-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.fault-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+}
+
+@media (max-width: 720px) {
+    .fault-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.fault-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.fault-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fault-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.help-chip {
+    flex-shrink: 0;
+    width: 1.35rem;
+    height: 1.35rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.help-chip:hover {
+    color: var(--accent-info);
+    border-color: var(--accent-info);
+    background: rgba(23, 162, 184, 0.12);
+}
+
+.help-chip:focus-visible {
+    outline: 2px solid var(--accent-info);
+    outline-offset: 2px;
+}
+
+.field-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+.field-hint-inline {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.fault-duration-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fault-input {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.fault-input-narrow {
+    width: auto;
+    min-width: 5rem;
+    max-width: 8rem;
+}
+
+.fault-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.fault-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding-top: 4px;
+    border-top: 1px solid var(--border-color);
+}
+
+.fault-help-dialog {
+    margin: auto;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    max-width: min(32rem, calc(100vw - 2rem));
+    background: transparent;
+    color: inherit;
+}
+
+.fault-help-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+}
+
+.fault-help-dialog-inner {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.fault-help-dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px 0;
+}
+
+.fault-help-dialog-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.35;
+}
+
+.fault-help-dialog-close {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.fault-help-dialog-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
+.fault-help-dialog-body {
+    padding: 14px 18px 18px;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.fault-help-dialog-body p {
+    margin: 0 0 0.75rem;
+}
+
+.fault-help-dialog-body p:last-child {
+    margin-bottom: 0;
+}
+
+.fault-help-dialog-body code {
+    font-size: 0.8em;
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--accent-warning);
+}
+
+.fault-help-dialog-footer {
+    padding: 0 18px 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.fault-result {
+    padding: 12px 16px;
+    font-size: 0.85rem;
+}
+
+.fault-result:empty {
+    display: none;
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-secondary);
+    border-color: var(--text-muted);
+}
+
+@media (max-width: 1024px) {
+    .scenario-list-panel {
+        width: 300px;
+    }
+    
+    .scenario-description-panel {
+        max-height: 150px;
+    }
+}
+
+@media (max-width: 768px) {
+    .split-panel {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 200px);
+    }
+
+    .scenario-list-panel {
+        width: 100%;
+        max-height: none;
+        border-radius: 8px;
+    }
+    
+    .scenario-list {
+        max-height: 200px;
+    }
+
+    .scenario-description-panel {
+        max-height: 120px;
+    }
+
+    .preview-panel {
+        min-height: 300px;
+        border-radius: 8px;
+    }
+
+    .panel-header-flex {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .trigger-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .scenario-item {
+        padding: 12px 16px;
+    }
+
+    .scenario-icon {
+        font-size: 1.2rem;
+    }
+
+    .scenario-name {
+        font-size: 0.85rem;
+    }
+
+    .scenario-desc {
+        font-size: 0.7rem;
+    }
+}
+</style>
+
+<script>
+const FAULT_HELP = {
+    target: {
+        title: 'Target endpoint',
+        html: '<p>Choose which Subscription Manager–style REST call the fault applies to. The validator matches your request path and HTTP method against this pattern before the handler runs.</p><p>Use this to simulate failures on <strong>create</strong>, <strong>update</strong>, <strong>delete</strong>, <strong>renew</strong>, or <strong>list</strong> subscriptions so the consumer’s retries, timeouts, and reconciliation can be observed.</p>'
+    },
+    type: {
+        title: 'Fault type',
+        html: '<p><strong>HTTP status</strong> — Respond with a fixed status (e.g. 503, 409) instead of normal JSON.</p><p><strong>Delay (latency)</strong> — Hold the request for the given number of <strong>milliseconds</strong> before continuing (or failing).</p><p><strong>Random drop</strong> — Randomly abort a percentage of matching requests to simulate flaky networks or overloaded gateways.</p>'
+    },
+    value: {
+        title: 'Primary value',
+        html: '<p>Depends on fault type:</p><p><strong>HTTP status</strong> — Status code (400–599), e.g. <code>503</code> for unavailable, <code>409</code> for conflict.</p><p><strong>Delay</strong> — Milliseconds to wait, e.g. <code>12000</code> to exceed a short client read timeout.</p><p><strong>Random drop</strong> — Percentage of requests to drop (1–100), e.g. <code>50</code> for half.</p>'
+    },
+    duration: {
+        title: 'Active duration',
+        html: '<p>How long the fault stays active, in <strong>seconds</strong>. After it expires, matching requests behave normally again unless you inject another fault.</p><p>Use a short duration for one-off tests; longer values for soak or manual debugging.</p>'
+    }
+};
+
+function openFaultHelp(key) {
+    const entry = FAULT_HELP[key];
+    if (!entry) return;
+    const dlg = document.getElementById('fault-help-dialog');
+    document.getElementById('fault-help-dialog-title').textContent = entry.title;
+    document.getElementById('fault-help-dialog-body').innerHTML = entry.html;
+    dlg.showModal();
+}
+
+let selectedScenario = null;
+let triggerUrl = null;
+let showRandomizeCheckbox = true;
+
+function selectScenario(id, name, url, showRandomize, description) {
+    document.querySelectorAll('.scenario-item').forEach(el => el.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    
+    selectedScenario = id;
+    triggerUrl = url;
+    showRandomizeCheckbox = showRandomize;
+    
+    document.getElementById('preview-title').textContent = name;
+    document.getElementById('trigger-controls').style.display = 'flex';
+    document.getElementById('trigger-result').innerHTML = '';
+    
+    const randomizeLabel = document.getElementById('randomize-label');
+    const currentUtcLabel = document.getElementById('current-utc-label');
+    if (showRandomize) {
+        randomizeLabel.style.display = 'flex';
+        currentUtcLabel.style.display = 'flex';
+    } else {
+        randomizeLabel.style.display = 'none';
+        currentUtcLabel.style.display = 'none';
+    }
+    
+    document.getElementById('scenario-description').innerHTML = description;
+    
+    document.getElementById('scenario-preview').innerHTML = '<div class="empty-state"><div class="empty-state-text">Loading preview...</div></div>';
+    
+    fetch('/admin/scenario/' + id + '/preview')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('scenario-preview').innerHTML = html;
+        })
+        .catch(err => {
+            document.getElementById('scenario-preview').innerHTML = '<div class="trigger-error">Failed to load preview: ' + err.message + '</div>';
+        });
+    
+    updateTriggerUrl();
+}
+
+function updateTriggerUrl() {
+    if (!triggerUrl) return;
+    const btn = document.getElementById('trigger-btn');
+    
+    if (showRandomizeCheckbox) {
+        const randomize = document.getElementById('randomize-dates').checked;
+        const currentUtc = document.getElementById('use-current-utc').checked;
+        btn.setAttribute('hx-post', triggerUrl + '?randomizeDates=' + randomize + '&useCurrentUtc=' + currentUtc);
+    } else {
+        btn.setAttribute('hx-post', triggerUrl);
+    }
+    htmx.process(btn);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('randomize-dates').addEventListener('change', function() {
+        if (this.checked) document.getElementById('use-current-utc').checked = false;
+        updateTriggerUrl();
+    });
+    document.getElementById('use-current-utc').addEventListener('change', function() {
+        if (this.checked) document.getElementById('randomize-dates').checked = false;
+        updateTriggerUrl();
+    });
+    updateFaultFields();
+    const faultHelpDlg = document.getElementById('fault-help-dialog');
+    if (faultHelpDlg) {
+        faultHelpDlg.addEventListener('click', function(e) {
+            if (e.target === faultHelpDlg) {
+                faultHelpDlg.close();
+            }
+        });
+    }
+});
+
+function updateFaultFields() {
+    const type = document.getElementById('fault-type').value;
+    const valueInput = document.getElementById('fault-value');
+    const valueLabel = document.getElementById('fault-value-label');
+
+    if (type === 'status') {
+        valueLabel.textContent = 'HTTP status code';
+        valueInput.placeholder = '503';
+        valueInput.min = 400;
+        valueInput.max = 599;
+        valueInput.value = 503;
+    } else if (type === 'delay') {
+        valueLabel.textContent = 'Delay (milliseconds)';
+        valueInput.placeholder = '12000';
+        valueInput.min = 100;
+        valueInput.max = 60000;
+        valueInput.value = 12000;
+    } else if (type === 'drop') {
+        valueLabel.textContent = 'Drop rate (%)';
+        valueInput.placeholder = '50';
+        valueInput.min = 1;
+        valueInput.max = 100;
+        valueInput.value = 50;
+    }
+}
+
+function injectFault() {
+    const target = document.getElementById('fault-target');
+    const pathPattern = target.value;
+    const httpMethod = target.selectedOptions[0].dataset.method;
+    const type = document.getElementById('fault-type').value;
+    const value = parseInt(document.getElementById('fault-value').value);
+    const duration = parseInt(document.getElementById('fault-duration').value);
+
+    if (!value) {
+        document.getElementById('fault-result').innerHTML = '<div class="trigger-error">Please enter a value</div>';
+        return;
+    }
+
+    const payload = {
+        pathPattern: pathPattern,
+        httpMethod: httpMethod,
+        durationSeconds: duration
+    };
+
+    if (type === 'status') {
+        payload.httpStatus = value;
+    } else if (type === 'delay') {
+        payload.delayMs = value;
+    } else if (type === 'drop') {
+        payload.dropRate = value;
+    }
+
+    fetch('/admin/faults/inject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('fault-result').innerHTML = html;
+    })
+    .catch(err => {
+        document.getElementById('fault-result').innerHTML = '<div class="trigger-error">Error: ' + err.message + '</div>';
+    });
+}
+</script>
+{/content}
+{/include}

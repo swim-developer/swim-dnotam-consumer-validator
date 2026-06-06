@@ -1,0 +1,6 @@
+*.backup
+*.bak
+*.crt
+*.key
+*.pem
+

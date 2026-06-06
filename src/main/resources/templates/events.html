@@ -1,0 +1,588 @@
+{#include layout}
+{#content}
+<div class="filter-header">
+    <div class="filter-header-top">
+        <h2 class="filter-title">Event Files</h2>
+        <span class="filter-description">AIXM event XML files available for publishing ({files.size} files)</span>
+    </div>
+    <div class="filter-controls">
+        <div class="filter-group">
+            <label for="filter-scenario">Scenario</label>
+            <select id="filter-scenario" class="filter-select" onchange="applyFilters()">
+                <option value="">All</option>
+                {#for opt in filterOptions.eventScenarios}
+                <option value="{opt}">{opt}</option>
+                {/for}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-airport">Airport</label>
+            <select id="filter-airport" class="filter-select" onchange="applyFilters()">
+                <option value="">All</option>
+                {#for opt in filterOptions.airports}
+                <option value="{opt}">{opt}</option>
+                {/for}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-airspace">Airspace</label>
+            <select id="filter-airspace" class="filter-select" onchange="applyFilters()">
+                <option value="">All</option>
+                {#for opt in filterOptions.airspaces}
+                <option value="{opt}">{opt}</option>
+                {/for}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-series">Series</label>
+            <select id="filter-series" class="filter-select" onchange="applyFilters()">
+                <option value="">All</option>
+                {#for opt in filterOptions.series}
+                <option value="{opt}">{opt}</option>
+                {/for}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-publisher">Publisher</label>
+            <select id="filter-publisher" class="filter-select" onchange="applyFilters()">
+                <option value="">All</option>
+                {#for opt in filterOptions.publishers}
+                <option value="{opt}">{opt}</option>
+                {/for}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-provider">Provider</label>
+            <select id="filter-provider" class="filter-select" onchange="applyFilters()">
+                <option value="">All</option>
+                {#for opt in filterOptions.providers}
+                <option value="{opt}">{opt}</option>
+                {/for}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Clear</button>
+        </div>
+    </div>
+</div>
+
+<div class="split-panel">
+    <div class="file-list-panel">
+        <div class="panel-header">
+            <span>Files</span>
+            <span id="file-count" class="file-count-badge">{files.size}</span>
+        </div>
+        <ul class="file-list" id="file-list">
+            {#for file in files}
+            <li class="file-item" 
+                data-filename="{file.filename}"
+                data-scenario="{file.eventScenario ?: ''}"
+                data-airports="{file.airportsJson}"
+                data-airspaces="{file.airspacesJson}"
+                data-series="{file.eventSeries ?: ''}"
+                data-publisher="{file.publisher ?: ''}"
+                data-provider="{file.provider ?: ''}"
+                hx-get="/ui/events/preview?file={file.filename}" 
+                hx-target="#file-preview"
+                hx-swap="innerHTML"
+                onclick="selectFile('{file.filename}')">
+                <span class="file-icon">📄</span>
+                <span class="file-name">{file.filename}</span>
+            </li>
+            {/for}
+        </ul>
+    </div>
+    <div class="preview-panel">
+        <div class="panel-header-flex">
+            <span>Preview</span>
+            <div class="trigger-controls" style="display: none;" id="trigger-controls">
+                <label class="count-label" title="Number of messages to send">
+                    <span>Count</span>
+                    <input type="number" id="message-count" value="1" min="1" max="100" class="count-input">
+                </label>
+                <label class="checkbox-label" title="When enabled, all gml:id attributes are replaced with new UUIDs. Prevents the consumer from treating the message as a duplicate (idempotency).">
+                    <input type="checkbox" id="randomize-id" checked>
+                    <span>Random ID</span>
+                </label>
+                <label class="checkbox-label" title="When enabled, dates in the XML are randomized to the current year before sending. This prevents the client from treating the message as a duplicate (idempotent).">
+                    <input type="checkbox" id="randomize-dates" checked>
+                    <span>Randomize Dates</span>
+                </label>
+                <label class="checkbox-label" title="When enabled, all date fields are replaced with the current UTC time. Mutually exclusive with Randomize Dates.">
+                    <input type="checkbox" id="use-current-utc">
+                    <span>Use Current UTC</span>
+                </label>
+                <label class="checkbox-label" title="When enabled, coordinates in the XML are randomized to a location within Europe. Useful for testing map visualization.">
+                    <input type="checkbox" id="randomize-location">
+                    <span>Randomize Location</span>
+                </label>
+                <button id="trigger-btn" 
+                        class="btn btn-primary btn-sm" 
+                        hx-post="/admin/trigger"
+                        hx-target="#trigger-result"
+                        hx-swap="innerHTML">
+                    🚀 Trigger Event
+                </button>
+            </div>
+        </div>
+        <div id="trigger-result"></div>
+        <div id="file-preview" class="preview-content">
+            <div class="empty-state">
+                <div class="empty-state-icon">👈</div>
+                <div class="empty-state-text">Select a file to preview</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.filter-header {
+    background: var(--bg-card);
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.filter-header-top {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.filter-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.filter-description {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.filter-group label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.filter-select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    min-width: 120px;
+    cursor: pointer;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.file-count-badge {
+    background: var(--accent-secondary);
+    color: var(--accent-primary);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.panel-header {
+    padding: 16px 20px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.split-panel {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 340px);
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.panel-header-flex {
+    padding: 12px 20px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.trigger-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+}
+
+.count-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.count-input {
+    width: 60px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.count-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+#trigger-result {
+    padding: 0 20px;
+}
+
+#trigger-result:not(:empty) {
+    padding: 12px 20px;
+}
+
+.trigger-success {
+    background: rgba(0, 210, 106, 0.1);
+    border: 1px solid var(--accent-success);
+    color: var(--accent-success);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.trigger-error {
+    background: rgba(233, 69, 96, 0.1);
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.file-list-panel {
+    width: 320px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-panel {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.file-list {
+    list-style: none;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s;
+}
+
+.file-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.file-item.htmx-request {
+    background: var(--accent-secondary);
+}
+
+.file-item.hidden {
+    display: none;
+}
+
+.file-icon {
+    font-size: 1.1rem;
+}
+
+.file-name {
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.preview-content {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+}
+
+.preview-content pre {
+    margin: 0;
+    padding: 20px;
+    background: transparent !important;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.preview-content code {
+    background: transparent !important;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.preview-content .empty-state {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.file-item.selected {
+    background: var(--accent-secondary);
+    border-left: 3px solid var(--accent-primary);
+}
+
+@media (max-width: 1200px) {
+    .filter-controls {
+        gap: 12px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .file-list-panel {
+        width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .split-panel {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 200px);
+    }
+
+    .file-list-panel {
+        width: 100%;
+        max-height: 200px;
+        border-radius: 8px;
+    }
+
+    .preview-panel {
+        min-height: 300px;
+        border-radius: 8px;
+    }
+
+    .panel-header-flex {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .trigger-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .file-item {
+        padding: 10px 16px;
+    }
+
+    .file-name {
+        font-size: 0.8rem;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-header-top {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .filter-select {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+let selectedFilename = null;
+
+function selectFile(filename) {
+    document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    selectedFilename = filename;
+    
+    document.getElementById('trigger-controls').style.display = 'flex';
+    updateTriggerUrl();
+    document.getElementById('trigger-result').innerHTML = '';
+}
+
+function updateTriggerUrl() {
+    if (!selectedFilename) return;
+    const randomizeId = document.getElementById('randomize-id').checked;
+    const randomizeDates = document.getElementById('randomize-dates').checked;
+    const useCurrentUtc = document.getElementById('use-current-utc').checked;
+    const randomizeLocation = document.getElementById('randomize-location').checked;
+    const count = document.getElementById('message-count').value || 1;
+    const btn = document.getElementById('trigger-btn');
+    btn.setAttribute('hx-post', '/admin/trigger?file=' + encodeURIComponent(selectedFilename) + 
+        '&randomizeId=' + randomizeId +
+        '&randomizeDates=' + randomizeDates + 
+        '&useCurrentUtc=' + useCurrentUtc +
+        '&randomizeLocation=' + randomizeLocation + 
+        '&count=' + count);
+    htmx.process(btn);
+}
+
+function applyFilters() {
+    const scenario = document.getElementById('filter-scenario').value;
+    const airport = document.getElementById('filter-airport').value;
+    const airspace = document.getElementById('filter-airspace').value;
+    const series = document.getElementById('filter-series').value;
+    const publisher = document.getElementById('filter-publisher').value;
+    const provider = document.getElementById('filter-provider').value;
+    
+    clearSelection();
+    
+    const items = document.querySelectorAll('.file-item');
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        let visible = true;
+        
+        if (scenario && item.dataset.scenario !== scenario) visible = false;
+        if (airport) {
+            const airports = JSON.parse(item.dataset.airports || '[]');
+            if (!airports.includes(airport)) visible = false;
+        }
+        if (airspace) {
+            const airspaces = JSON.parse(item.dataset.airspaces || '[]');
+            if (!airspaces.includes(airspace)) visible = false;
+        }
+        if (series && item.dataset.series !== series) visible = false;
+        if (publisher && item.dataset.publisher !== publisher) visible = false;
+        if (provider && item.dataset.provider !== provider) visible = false;
+        
+        if (visible) {
+            item.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+    
+    document.getElementById('file-count').textContent = visibleCount;
+}
+
+function clearSelection() {
+    selectedFilename = null;
+    document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+    document.getElementById('trigger-controls').style.display = 'none';
+    document.getElementById('trigger-result').innerHTML = '';
+    document.getElementById('file-preview').innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-icon">👈</div>
+            <div class="empty-state-text">Select a file to preview</div>
+        </div>
+    `;
+}
+
+function clearFilters() {
+    document.getElementById('filter-scenario').value = '';
+    document.getElementById('filter-airport').value = '';
+    document.getElementById('filter-airspace').value = '';
+    document.getElementById('filter-series').value = '';
+    document.getElementById('filter-publisher').value = '';
+    document.getElementById('filter-provider').value = '';
+    applyFilters();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('randomize-id').addEventListener('change', updateTriggerUrl);
+    document.getElementById('randomize-dates').addEventListener('change', function() {
+        if (this.checked) document.getElementById('use-current-utc').checked = false;
+        updateTriggerUrl();
+    });
+    document.getElementById('use-current-utc').addEventListener('change', function() {
+        if (this.checked) document.getElementById('randomize-dates').checked = false;
+        updateTriggerUrl();
+    });
+    document.getElementById('randomize-location').addEventListener('change', updateTriggerUrl);
+    document.getElementById('message-count').addEventListener('change', updateTriggerUrl);
+    document.getElementById('message-count').addEventListener('input', updateTriggerUrl);
+});
+</script>
+{/content}
+{/include}

@@ -1,0 +1,87 @@
+<messages>
+  <message type="text">
+    <body>
+      <![CDATA[
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><!-- Example initially created by Andreea PERCA, ASBU For Future GMBH, updated by Manfred Odenstein, SOLITEC Software Soltuions GmbH -->
+<!-- Copyright (c) 2022, EUROCONTROL & FAA
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+    Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+    Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+    Neither the names of EUROCONTROL or FAA nor the names of their contributors may be used to endorse or promote products derived from this specification without specific prior written permission.
+
+THIS FICTITIOUS DATA SET IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Editorial note: this license is an instance of the BSD license template as provided by the Open Source Initiative: http://www.opensource.org/licenses/bsd-license.php-->
+<!-- Modified by Marcelo Sales (marcelo.d.sales@gmail.com) for the SWIM Developer project.
+     Project: https://github.com/orgs/swim-developer/repositories
+     Purpose: Testing and demonstration of SWIM Digital NOTAM services.
+     All credits to the original creator(s) must be preserved. -->
+<message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:event="http://www.aixm.aero/schema/5.1.1/event" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" gml:id="M00001" xsi:schemaLocation="http://www.aixm.aero/schema/5.1.1/message http://www.aixm.aero/schema/5.1.1/message/AIXM_BasicMessage.xsd      http://www.aixm.aero/schema/5.1.1/event http://www.aixm.aero/schema/5.1.1/event/version_5.1.1-j/Event_Features.xsd">    
+
+    <!-- This is a DN for a navaid partly unserviceable-->
+    
+    <message:hasMember>
+        <event:Event gml:id="uuid.94b7c517-1c57-4adc-b0b2-584841a565b6">
+            <gml:identifier codeSpace="urn:uuid:">94b7c517-1c57-4adc-b0b2-584841a565b6</gml:identifier>
+            <event:timeSlice>
+                <event:EventTimeSlice gml:id="ID_NAVUNS_C001">
+                    <gml:validTime>
+                        <gml:TimePeriod gml:id="ID_NAVUNS_C002">
+                            <gml:beginPosition>2025-10-15T09:00:00Z</gml:beginPosition>
+                            <gml:endPosition>2025-10-20T17:00:00Z</gml:endPosition>
+                        </gml:TimePeriod>
+                    </gml:validTime>
+                    <aixm:interpretation>BASELINE</aixm:interpretation>
+                    <aixm:sequenceNumber>1</aixm:sequenceNumber>
+                    <aixm:correctionNumber>0</aixm:correctionNumber>
+                    <aixm:featureLifetime>
+                        <gml:TimePeriod gml:id="ID_NAVUNS_C003">
+                            <gml:beginPosition>2025-10-15T09:00:00Z</gml:beginPosition>
+                            <gml:endPosition>2025-10-20T17:00:00Z</gml:endPosition>
+                        </gml:TimePeriod>
+                    </aixm:featureLifetime>
+                    <event:scenario>NAV.UNS</event:scenario>
+                    <event:version>2.0</event:version>
+                    <event:concernedAirspace xlink:href="urn:uuid:f4d5e4d4-d84a-481f-b9e3-b359e42c0dff"/>
+                    <event:concernedAirportHeliport xlink:href="urn:uuid:1b54b2d6-a5ff-4e57-94c2-f4047a381c64" xlink:title="DONLON/INTL."/>
+                    <event:notification>
+                        <event:NOTAM gml:id="ID_NAVUNS_C004">
+                            <event:series>A</event:series>
+                            <event:number>1321</event:number>
+                            <event:year>2025</event:year>
+                            <event:publisher xlink:href="urn:uuid:5a943943-5cbb-4586-8afe-87c19fef1b8a" xlink:title="EUROCONTROL"/>
+                            <event:type>N</event:type>
+                            <event:affectedFIR>EAAD</event:affectedFIR>
+                            <event:selectionCode>QNMAS</event:selectionCode>
+                            <event:traffic>IV</event:traffic>
+                            <event:purpose>BO</event:purpose>
+                            <event:scope>AE</event:scope>
+                            <event:minimumFL>000</event:minimumFL>
+                            <event:maximumFL>999</event:maximumFL>
+                            <event:coordinates>5221N03222W</event:coordinates>
+                            <event:radius>005</event:radius>
+                            <event:location>EADD</event:location>
+                            <event:effectiveStart>2510150900</event:effectiveStart>
+                            <event:effectiveEnd>2510201700</event:effectiveEnd>
+                            <event:text>BOORSPIJK VOR/DME VOR part BOR unserviceable.</event:text>
+                        </event:NOTAM>
+                    </event:notification>
+                    <event:provider xlink:href="urn:uuid:060ad0c6-5ca1-4be4-a677-656223c48421" xlink:title="EAD"/>
+                    </event:EventTimeSlice>
+            </event:timeSlice>
+        </event:Event>
+    </message:hasMember>
+
+</message:AIXMBasicMessage>]]>
+    </body>
+  </message>
+</messages>

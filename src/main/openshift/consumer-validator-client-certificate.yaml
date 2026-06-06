@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: consumer-validator-client-certificate
+  namespace: swim-demo
+spec:
+  secretName: consumer-validator-client-tls
+  issuerRef:
+    name: swim-ca-issuer
+    kind: ClusterIssuer
+  commonName: consumer-validator-client
+  usages:
+    - digital signature
+    - key encipherment
+    - client auth
+  privateKey:
+    algorithm: RSA
+    size: 2048

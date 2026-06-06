@@ -1,0 +1,161 @@
+{#include layout}
+{#content}
+<div class="page-header">
+    <h2 class="page-title">Event Examples</h2>
+    <p class="page-description">Available values for subscription filters in this Consumer Validator</p>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Event Scenarios (eventScenario)</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>XML Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>AD.CLS</code></td><td>Aerodrome Closure</td><td>5</td></tr>
+                <tr><td><code>AD.LIM</code></td><td>Aerodrome Limitation</td><td>8</td></tr>
+                <tr><td><code>APN.CLS</code></td><td>Apron Closure</td><td>6</td></tr>
+                <tr><td><code>NAV.UNS</code></td><td>Navaid Unserviceable</td><td>6</td></tr>
+                <tr><td><code>OBS.NEW</code></td><td>Obstacle New</td><td>6</td></tr>
+                <tr><td><code>RWY.CLS</code></td><td>Runway Closure</td><td>6</td></tr>
+                <tr><td><code>RWY.LIM</code></td><td>Runway Limitation</td><td>6</td></tr>
+                <tr><td><code>SAA.ACT</code></td><td>Special Activity Activation</td><td>4</td></tr>
+                <tr><td><code>SAA.NEW</code></td><td>Special Activity New</td><td>4</td></tr>
+                <tr><td><code>SFC.CON</code></td><td>Surface Condition</td><td>10</td></tr>
+                <tr><td><code>STAND.CLS</code></td><td>Stand Closure</td><td>2</td></tr>
+                <tr><td><code>STAND.LIM</code></td><td>Stand Limitation</td><td>4</td></tr>
+                <tr><td><code>WLD.HZD</code></td><td>Wildlife Hazard</td><td>5</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Airports (airportHeliport)</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>XML Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>EADD</code></td><td>Donlon International (fictitious)</td><td>20</td></tr>
+                <tr><td><code>EADH</code></td><td>Donlon Downtown Heliport (fictitious)</td><td>12</td></tr>
+                <tr><td><code>EDDF</code></td><td>Frankfurt</td><td>9</td></tr>
+                <tr><td><code>EGLL</code></td><td>London Heathrow</td><td>6</td></tr>
+                <tr><td><code>LFPO</code></td><td>Paris Orly</td><td>6</td></tr>
+                <tr><td><code>EGKK</code></td><td>London Gatwick</td><td>5</td></tr>
+                <tr><td><code>EHAM</code></td><td>Amsterdam Schiphol</td><td>5</td></tr>
+                <tr><td><code>LFPG</code></td><td>Paris CDG</td><td>3</td></tr>
+                <tr><td><code>LIRF</code></td><td>Rome Fiumicino</td><td>3</td></tr>
+                <tr><td><code>LEMD</code></td><td>Madrid Barajas</td><td>2</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Airspace/FIR (airspace)</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>XML Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>EAAD</code></td><td>Donlon FIR (fictitious)</td><td>21</td></tr>
+                <tr><td><code>LFFF</code></td><td>Paris FIR</td><td>10</td></tr>
+                <tr><td><code>LIRR</code></td><td>Rome FIR</td><td>10</td></tr>
+                <tr><td><code>EGTT</code></td><td>London FIR</td><td>8</td></tr>
+                <tr><td><code>EHAA</code></td><td>Amsterdam FIR</td><td>6</td></tr>
+                <tr><td><code>EDGG</code></td><td>Langen FIR (Germany)</td><td>6</td></tr>
+                <tr><td><code>LECM</code></td><td>Madrid FIR</td><td>4</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Event Series (eventSeries)</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Value</th>
+                    <th>Description</th>
+                    <th>XML Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>A</code></td><td>Series A (majority of NOTAMs)</td><td>64</td></tr>
+                <tr><td><code>B</code></td><td>Series B</td><td>1</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Publisher</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Value</th>
+                    <th>Description</th>
+                    <th>XML Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>EUROCONTROL</code></td><td>European Organisation for Air Traffic Control</td><td>~40</td></tr>
+                <tr><td><code>NATS</code></td><td>UK ANSP</td><td>~8</td></tr>
+                <tr><td><code>DSNA</code></td><td>French ANSP (Direction des Services de la Navigation Aérienne)</td><td>~6</td></tr>
+                <tr><td><code>ENAIRE</code></td><td>Spanish ANSP</td><td>~6</td></tr>
+                <tr><td><code>ENAV</code></td><td>Italian ANSP</td><td>~6</td></tr>
+                <tr><td><code>DFS</code></td><td>German ANSP (Deutsche Flugsicherung)</td><td>~5</td></tr>
+                <tr><td><code>LVNL</code></td><td>Dutch ANSP (Luchtverkeersleiding Nederland)</td><td>~4</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Provider</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Value</th>
+                    <th>Description</th>
+                    <th>XML Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>EAD</code></td><td>European AIS Database</td><td>~40</td></tr>
+                <tr><td><code>NATS</code></td><td>UK ANSP</td><td>~8</td></tr>
+                <tr><td><code>DSNA</code></td><td>French ANSP</td><td>~6</td></tr>
+                <tr><td><code>ENAIRE</code></td><td>Spanish ANSP</td><td>~6</td></tr>
+                <tr><td><code>ENAV</code></td><td>Italian ANSP</td><td>~6</td></tr>
+                <tr><td><code>DFS</code></td><td>German ANSP</td><td>~5</td></tr>
+                <tr><td><code>LVNL</code></td><td>Dutch ANSP</td><td>~4</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <strong>Note:</strong> All Consumer Validator XMLs include <code>publisher</code> and <code>provider</code> values in xlink format. 
+    The fictitious locations (EADD, EADH, EAAD) are from EUROCONTROL test data and have the highest event coverage.
+</div>
+{/content}
+{/include}
